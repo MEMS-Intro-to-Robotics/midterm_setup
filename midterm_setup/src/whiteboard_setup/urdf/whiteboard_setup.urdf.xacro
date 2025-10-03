@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="whiteboard">
+
+  <!-- This returns .../install/whiteboard_setup/share/whiteboard_setup -->
+  <xacro:property name="pkg_share" value="$(find whiteboard_setup)"/>
+
+  <link name="whiteboard">
+    <visual>
+      <geometry>
+        <mesh filename="${pkg_share}/meshes/whiteboard.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="grey"><color rgba="0.6 0.6 0.6 1"/></material>
+    </visual>
+
+
+    <collision name="wb_base">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+        <box size="0.3048 0.9144 0.062"/>
+        </geometry>
+    </collision>
+
+    <!-- collision: upright board -->
+    <collision name="wb_panel">
+        <origin xyz="0.00 0.668 0.0381" rpy="0 0 0"/>
+        <geometry>
+        <box size="0.3048 0.0286 0.6096"/>
+        </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="2.0"/>
+      <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+    <gazebo>
+        <static>true</static>
+  </gazebo>
+</robot>
+
