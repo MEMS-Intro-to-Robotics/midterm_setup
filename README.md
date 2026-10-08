@@ -1,55 +1,54 @@
----
+# Midterm whiteboard station
 
-# Midterm: Optional Whiteboard & Pen Setup (Physical Robot)
+The `whiteboard_setup` package adds the midterm whiteboard station to Gazebo and to
+MoveIt's planning scene, and attaches the marker adapter to the gripper in MoveIt.
+It is built into the course Kinova image at `/opt/kortex_ws`, with two commands:
 
-If you choose to run your midterm on the **physical Kinova Gen3 Lite**, you’ll need to set up the environment so MoveIt knows about the **whiteboard** and the **pen** the robot will be holding.
+| Command | What it does |
+|---|---|
+| `kinova-whiteboard` | Adds the board, the table, and the arm's mounting plate and quick mount to Gazebo and to MoveIt's planning scene, then exits |
+| `kinova-pen` | Attaches the marker adapter to `end_effector_link` in MoveIt's planning scene, then exits |
 
----
+## Geometry
 
-## 1. Spawn the Whiteboard
+All values are in `base_link`, in meters, and match the lab stations and the midterm
+handout:
 
-Start the whiteboard (static object in Gazebo, matching collision boxes in MoveIt):
+- The board surface is the plane x = 0.55. The board is 1.016 m (40 in) wide and
+  0.914 m tall above the tabletop.
+- The table is 60 x 30 in, with its end at the board. The tabletop is 0.0627 m below
+  `base_link` (the mounting plate and quick mount, as in Lab 6).
+- The writing box, y from -0.25 to 0.25 and z from 0.04 to 0.30, is outlined on the
+  board in Gazebo.
+- The marker adapter, with its collar, spans z = 0.0776 to 0.2014 in
+  `end_effector_link`. The marker tip is at z = 0.222, so the attached object ends
+  21 mm short of the tip and a pen-down pose is not a collision with the board.
+
+`whiteboard_setup/station.py` holds these values.
+
+## Simulation
+
+Start Gazebo and MoveIt as in Lab 5. Then, in another container terminal:
 
 ```bash
-ros2 launch whiteboard_setup spawn_whiteboard.launch.py
+kinova-whiteboard
+kinova-pen
 ```
 
-This ensures your planning scene matches the physical setup with the board in front of the robot.
+Run both again after restarting MoveIt; the planning scene starts empty. Gazebo keeps
+the station until it restarts.
 
----
+## Real arm
 
-## 2. Attach the Pen (MoveIt only)
-
-The robot will be holding a simulated pen (25 mm diameter × 150 mm tall) in MoveIt.
-This is only added to the **planning scene** — it is not spawned into Gazebo to avoid physics engine complications.
-
-Run:
+There is no Gazebo, so add `gazebo:=false`:
 
 ```bash
-ros2 run whiteboard_setup attach_pen
+kinova-whiteboard gazebo:=false
+kinova-pen
 ```
 
-This attaches the pen to the robot’s `end_effector_link`, so it follows the gripper when planning motions.
-
-⚠️ **Important:** Do this **before moving the robot**.
-If you attach after moving, the pen will be in the wrong place relative to the arm.
-
-To remove the pen later:
+To remove the adapter from the planning scene:
 
 ```bash
 ros2 run whiteboard_setup attach_pen --ros-args -p attach:=false
 ```
-
----
-
-## 3. Key Notes
-
-* The pen is allowed to contact the gripper fingers (so you won’t get collision errors).
-* Dimensions are slightly larger than the actual marker so that planning is conservative.
-* If you are only running your midterm in **simulation**, you do not need this setup.
-
----
-
-✅ With both steps complete, your MoveIt planning scene will accurately reflect the real robot holding a pen in front of the whiteboard.
-
----
