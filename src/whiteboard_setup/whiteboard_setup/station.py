@@ -53,13 +53,14 @@ def planning_scene_boxes() -> dict[str, tuple[tuple[float, float, float], tuple[
 
 
 def _box(name: str, size: tuple[float, ...], center: tuple[float, ...], rgba: str,
-         collide: bool = True) -> str:
+         collide: bool = True, emissive: str = "0 0 0 1") -> str:
     x, y, z = center
     z += GAZEBO_BASE_HEIGHT
     sx, sy, sz = size
     geometry = f"<geometry><box><size>{sx} {sy} {sz}</size></box></geometry>"
     visual = (f"<visual name='{name}'><pose>{x} {y} {z} 0 0 0</pose>{geometry}"
-              f"<material><ambient>{rgba}</ambient><diffuse>{rgba}</diffuse></material></visual>")
+              f"<material><ambient>{rgba}</ambient><diffuse>{rgba}</diffuse>"
+              f"<emissive>{emissive}</emissive></material></visual>")
     if not collide:
         return visual
     return f"<collision name='{name}'><pose>{x} {y} {z} 0 0 0</pose>{geometry}</collision>{visual}"
@@ -75,10 +76,11 @@ def station_sdf() -> str:
         _box("quick_mount", QUICK_MOUNT_SIZE,
              (0.0, 0.0, TABLE_TOP_Z + PLATE_SIZE[2] + QUICK_MOUNT_SIZE[2] / 2), "0.05 0.05 0.05 1"),
         _box("board_frame", *boxes["whiteboard"], "0.55 0.55 0.58 1"),
-        # The white writing surface, a millimeter in front of the frame.
+        # The white writing surface, a millimeter in front of the frame. Gazebo's
+        # default sun lights the back of the board, so the face glows to stay white.
         _box("board_surface", (0.001, BOARD_WIDTH - 0.03, BOARD_HEIGHT - 0.03),
              (BOARD_X - 0.0005, 0.0, TABLE_TOP_Z + BOARD_HEIGHT / 2), "0.97 0.97 0.97 1",
-             collide=False),
+             collide=False, emissive="0.8 0.8 0.8 1"),
     ]
     # The writing box as four thin gray lines on the surface.
     (y0, y1), (z0, z1), width = WRITING_BOX_Y, WRITING_BOX_Z, 0.004

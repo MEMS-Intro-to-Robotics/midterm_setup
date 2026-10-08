@@ -12,9 +12,9 @@ import rclpy
 from geometry_msgs.msg import Pose
 from moveit_msgs.msg import AttachedCollisionObject, CollisionObject, PlanningScene
 from moveit_msgs.srv import ApplyPlanningScene
-from rclpy.node import Node
 from shape_msgs.msg import SolidPrimitive
 
+from whiteboard_setup.scene_update import SceneUpdate, run
 from whiteboard_setup.station import ADAPTER_CENTER_Z, ADAPTER_SIZE
 
 LINK = "end_effector_link"
@@ -27,13 +27,12 @@ TOUCH_LINKS = [
 ]
 
 
-class AttachPen(Node):
+class AttachPen(SceneUpdate):
     def __init__(self) -> None:
-        super().__init__("attach_pen")
+        super().__init__("attach_pen", "")
         self.attach = bool(self.declare_parameter("attach", True).value)
-        self.client = self.create_client(ApplyPlanningScene, "apply_planning_scene")
-        self.timer = self.create_timer(1.0, self.try_apply)
-        self.waiting_logged = False
+        self.done_message = (f"Attached the marker adapter to {LINK}." if self.attach
+                             else f"Removed the marker adapter from {LINK}.")
 
     def request(self) -> ApplyPlanningScene.Request:
         attached = AttachedCollisionObject(link_name=LINK)
@@ -55,37 +54,10 @@ class AttachPen(Node):
         scene.robot_state.attached_collision_objects = [attached]
         return ApplyPlanningScene.Request(scene=scene)
 
-    def try_apply(self) -> None:
-        if not self.client.service_is_ready():
-            if not self.waiting_logged:
-                self.get_logger().info("Waiting for MoveIt (start MoveIt first)...")
-                self.waiting_logged = True
-            return
-        self.timer.cancel()
-        future = self.client.call_async(self.request())
-        future.add_done_callback(self.done)
-
-    def done(self, future) -> None:
-        if future.result() is not None and future.result().success:
-            action = ("Attached the marker adapter to" if self.attach
-                      else "Removed the marker adapter from")
-            self.get_logger().info(f"{action} {LINK}.")
-        else:
-            self.get_logger().error("MoveIt did not accept the planning scene update.")
-        raise SystemExit
-
 
 def main() -> None:
     rclpy.init()
-    node = AttachPen()
-    try:
-        rclpy.spin(node)
-    except SystemExit:
-        pass
-    finally:
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    run(AttachPen())
 
 
 if __name__ == "__main__":
